@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saree Catalog</title>
+  <style>
+    :root {
+      --primary: #b76e79;
+      --primary-dark: #8f4f58;
+      --bg: #fff8f5;
+      --card: #ffffff;
+      --text: #3d2c2e;
+      --muted: #7a5f63;
+      --border: #ead6d0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    header h1 { margin: 0; font-size: 1.5rem; }
+    header p { margin: 6px 0 0; opacity: 0.9; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .filters {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: end;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .filters label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .filters select,
+    .filters input {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .filters select:focus,
+    .filters input:focus { border-color: var(--primary); }
+
+    .filters .field { flex: 1 1 180px; min-width: 140px; }
+
+    .filters button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .filters button:hover { background: var(--primary-dark); }
+
+    .filters .clear {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+
+    .filters .clear:hover { background: #f3e7e4; }
+
+    .count {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+
+    .product {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .product:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .product a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .thumb {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: #f3e7e4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+
+    .thumb .placeholder {
+      font-size: 2.5rem;
+    }
+
+    .info { padding: 14px; }
+
+    .info h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .info .meta {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .info .price {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .info h3 { font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Saree Boutique</h1>
+    <p>Find the perfect saree for every occasion</p>
+  </header>
+
+  <div class="container">
+    <div class="filters">
+      <div class="field">
+        <label for="category">Category</label>
+        <select id="category">
+          <option value="">All categories</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="subcategory">Subcategory</label>
+        <select id="subcategory">
+          <option value="">All subcategories</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="min-price">Min price</label>
+        <input type="number" id="min-price" placeholder="Min price">
+      </div>
+      <div class="field">
+        <label for="max-price">Max price</label>
+        <input type="number" id="max-price" placeholder="Max price">
+      </div>
+      <button id="search-btn">Search</button>
+      <button id="clear-btn" class="clear">Clear</button>
+    </div>
+
+    <div class="count" id="count"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <script>
+    const CATEGORIES_URL = '/api/categories';
+    const PRODUCTS_URL = '/api/products';
+
+    const categorySelect = document.getElementById('category');
+    const subcategorySelect = document.getElementById('subcategory');
+    const minPrice = document.getElementById('min-price');
+    const maxPrice = document.getElementById('max-price');
+    const searchBtn = document.getElementById('search-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const grid = document.getElementById('grid');
+    const countEl = document.getElementById('count');
+
+    let categoryList = [];
+
+    function requestJson(url, callback, onError) {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.onerror = () => onError && onError('Network error');
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            callback(JSON.parse(xhr.responseText));
+          } catch (e) {
+            onError && onError('Invalid response');
+          }
+        } else {
+          onError && onError('Server error ' + xhr.status);
+        }
+      };
+      xhr.send();
+    }
+
+    function encodeParams(obj) {
+      const params = new URLSearchParams();
+      Object.entries(obj).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) params.set(k, v);
+      });
+      return params.toString();
+    }
+
+    function loadCategories() {
+      requestJson(
+        CATEGORIES_URL,
+        data => {
+          categoryList = data.categories || [];
+          categorySelect.innerHTML = '<option value="">All categories</option>';
+          subcategorySelect.innerHTML = '<option value="">All subcategories</option>';
+          categoryList.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.textContent = c.name;
+            categorySelect.appendChild(opt);
+          });
+        },
+        err => console.error(err)
+      );
+    }
+
+    categorySelect.addEventListener('change', () => {
+      subcategorySelect.innerHTML = '<option value="">All subcategories</option>';
+      const selected = categoryList.find(c => c.name === categorySelect.value);
+      if (selected && selected.subcategories) {
+        selected.subcategories.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s.name;
+          opt.textContent = s.name;
+          subcategorySelect.appendChild(opt);
+        });
+      }
+      doSearch();
+    });
+
+    subcategorySelect.addEventListener('change', doSearch);
+
+    function renderProducts(products) {
+      grid.innerHTML = '';
+      countEl.textContent = products.length ? `${products.length} saree(s) found` : '';
+
+      if (!products.length) {
+        grid.innerHTML = '<div class="empty">No sarees found for the selected filters.</div>';
+        return;
+      }
+
+      products.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product';
+
+        const href = p.image_url || '#';
+        const a = document.createElement('a');
+        a.href = href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        const placeholder = document.createElement('span');
+        placeholder.className = 'placeholder';
+        placeholder.textContent = '🥻';
+        const img = document.createElement('img');
+        img.alt = p.name;
+        if (p.image_url) {
+          img.src = p.image_url;
+          img.onload = () => { img.style.display = 'block'; placeholder.style.display = 'none'; };
+        }
+        thumb.appendChild(placeholder);
+        thumb.appendChild(img);
+
+        const info = document.createElement('div');
+        info.className = 'info';
+        const h3 = document.createElement('h3');
+        h3.textContent = p.name;
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `${p.category || ''} • ${p.subcategory || ''}`;
+        const price = document.createElement('div');
+        price.className = 'price';
+        price.textContent = '₹' + Number(p.price).toLocaleString();
+
+        info.appendChild(h3);
+        info.appendChild(meta);
+        info.appendChild(price);
+
+        a.appendChild(thumb);
+        a.appendChild(info);
+        card.appendChild(a);
+        grid.appendChild(card);
+      });
+    }
+
+    function doSearch() {
+      const params = {
+        category: categorySelect.value,
+        subcategory: subcategorySelect.value,
+        min_price: minPrice.value,
+        max_price: maxPrice.value,
+      };
+
+      const query = encodeParams(params);
+      const url = PRODUCTS_URL + (query ? '?' + query : '');
+
+      requestJson(
+        url,
+        products => renderProducts(products),
+        err => {
+          console.error(err);
+          grid.innerHTML = '<div class="empty">Error loading products.</div>';
+        }
+      );
+    }
+
+    function clearFilters() {
+      categorySelect.value = '';
+      subcategorySelect.innerHTML = '<option value="">All subcategories</option>';
+      minPrice.value = '';
+      maxPrice.value = '';
+      doSearch();
+    }
+
+    searchBtn.addEventListener('click', doSearch);
+    clearBtn.addEventListener('click', clearFilters);
+
+    loadCategories();
+    doSearch();
+  </script>
+</body>
+</html>
