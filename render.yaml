@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: saree-catalog-site
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}
+    envVars:
+      - key: CLOUDINARY_URL
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.10.12

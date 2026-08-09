@@ -1,0 +1,21 @@
+[project]
+name = "saree-catalog-site"
+version = "0.1.0"
+description = "Saree catalog web app with FastAPI backend"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "openai>=1.0.0",
+    "python-multipart",
+    "jinja2",
+    "httpx",
+    "cloudinary>=1.40.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = []

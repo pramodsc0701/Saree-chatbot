@@ -1,0 +1,8 @@
+.env
+.venv
+.git
+*.db
+*.log
+*.egg-info
+__pycache__
+cloudinary_cache.json
